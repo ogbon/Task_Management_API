@@ -5,7 +5,8 @@ USE task_management;
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(255) NOT NULL,
-    `password` VARCHAR(255) NOT NULL
+    `password` VARCHAR(255) NOT NULL,
+    `email` VARCHAR(255) UNIQUE NOT NULL
 );
 
 
@@ -21,8 +22,8 @@ CREATE TABLE IF NOT EXISTS `tasks` (
 );
 
 
-INSERT INTO `users` (`username`,`password`) 
-VALUES ("Loreta","password");
+INSERT INTO `users` (`username`,`password`,`email`) 
+VALUES ("Loreta","$2a$10$wslCPHTsPlgl516Zm53HAuNtwnvaMa3HpxipyekJGozl1s1BJVSnC","paulo@gmail.com");
 
 INSERT INTO `tasks` (title,description,due_date,status,user_id)
 VALUES ("Read", "Reading my books" ,"2023-12-13","pending",1),  
