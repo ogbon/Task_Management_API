@@ -37,7 +37,7 @@ const logIn = async (req,res) => {
         if (passValidated === false) {
             throw new Error("Your email or password is wrong.");
         }
-        const token = generateJWTToken({email: rows[0].email, username: rows[0].username})
+        const token = generateJWTToken({email: rows[0].email, username: rows[0].username, id: rows[0].id})
 
         res.status(200).send({data: {token, user:{email: rows[0].email, username: rows[0].username}}})   
   }catch(e){
