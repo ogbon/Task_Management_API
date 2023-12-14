@@ -37,7 +37,7 @@ const get = async (id) => {
 const find = async () => {
     
     try {
-      return [rows, fields] = await dbConnection.execute("SELECT * FROM `tasks`");
+      return [rows, fields] = await dbConnection.execute("SELECT * FROM `tasks`")
     }
     catch(err) {
      return err
@@ -53,17 +53,23 @@ const update = async (payload, id, currentUser={}) => {
         if(rows[0].user_id !== currentUser.id){ 
             throw new Error("Request cannot be processed")
         }
-        return await dbConnection.execute("UPDATE tasks SET title = ?, description = ?, due_date = ?, status = ? WHERE id=?",[title, description, due_date, status, id])
+        await dbConnection.execute("UPDATE tasks SET title = ?, description = ?, due_date = ?, status = ? WHERE id=?",[title, description, due_date, status, id])
+        return rows
     }
     catch(err) {
      return err
     }  
 }
 
-const updateStatus = async (status,id) => {
+const updateStatus = async (status,id,currentUser={}) => {
     
     try {
-      return await dbConnection.execute("UPDATE tasks SET status = ? WHERE id=?",[status, id])
+        [rows, fields] = await get(id)
+        if(rows[0].user_id !== currentUser.id){ 
+            throw new Error("Request cannot be processed")
+        }
+        await dbConnection.execute("UPDATE tasks SET status = ? WHERE id=?",[status, id])
+        return rows
     }
     catch(err) {
      return err

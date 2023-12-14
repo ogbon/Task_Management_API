@@ -1,3 +1,5 @@
+const {generateJWTToken, decodeJWTToken} = require('../authTools')
+
 const isAuthenticated = async (req, res, next) => {
     try {
       const user = decodeJWTToken(req.headers.authorization)
