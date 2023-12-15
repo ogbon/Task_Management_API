@@ -12,10 +12,10 @@ const create = async (payload, currentUser = {}) => {
     }  
 }
 
-const getUserTasks = async (currentUser={}) => {
+const getUserTasks = async ({limit,offset,currentUser={}}) => {
     
     try {
-      return [rows, fields] = await dbConnection.execute("SELECT * FROM `tasks` WHERE `user_id` = ?", [currentUser.id]);
+      return await dbConnection.execute("SELECT * FROM `tasks` WHERE `user_id`=? ORDER BY `tasks`.`id` LIMIT ? OFFSET ?", [currentUser.id,limit,offset]);
     }
     catch(err) {
      return err
@@ -34,10 +34,10 @@ const get = async (id) => {
     
 }
 
-const find = async () => {
+const find = async ({limit,offset}) => {
     
     try {
-      return [rows, fields] = await dbConnection.execute("SELECT * FROM `tasks`")
+      return await dbConnection.execute("SELECT * FROM `tasks` ORDER BY `tasks`.`id` LIMIT ? OFFSET ?",[limit,offset])
     }
     catch(err) {
      return err
