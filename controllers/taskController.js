@@ -5,8 +5,9 @@ const { create,
         remove,
         updateStatus,
         getUserTasks,
-        countTask
       } = require('../models/task')
+const dbConnection = require('../database/database') 
+const {pagination,totalPage} = require('../helpers/tools')      
 
 
 
@@ -39,12 +40,20 @@ const getTask = async (req, res) => {
  }
 
  const getAllTasks = async (req, res) => {
-
+   
+   const { page } = req.query
+   
     try {
-        let [rows,fields] = await find()
+        let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks");
+        let rows = await find({...pagination(page)})
      
      res.status(200).send({
-        data: rows
+        count: count[0].count,
+        data: rows[0],
+        currentPage: parseInt(page && page.number, 10) || 1,
+        totalPage: totalPage(count[0].count, (page && page.size)),
+        message: null,
+        success: true
      })
     }catch(err){
         console.log(err)
@@ -54,11 +63,20 @@ const getTask = async (req, res) => {
  }
 
  const findUserTasks = async (req, res) => {
-    
+   const {page} = req.query
+       
     try {
-     let [rows,fields] = await getUserTasks(req.decoded)
+      let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks WHERE user_id=?",[req.decoded.id]);
+      let rows = await getUserTasks({...pagination(page),currentUser:req.decoded})
      
-     res.status(200).send({data: rows})
+     res.status(200).send({
+        count: count[0].count,
+        data: rows[0],
+        currentPage: parseInt(page && page.number, 10) || 1,
+        totalPage: totalPage(count[0].count, (page && page.size)),
+        message: null,
+        success: true
+     })
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
