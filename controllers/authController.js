@@ -13,7 +13,7 @@ const signUp = async (req, res) => {
     const userId = await createUser({username,password: hash,email})
     if(userId[0].insertId){
        const [rows,fields] = await getUser(email)
-       res.status(201).send({data: {username: rows[0].username, email: rows[0].email}})
+       res.status(201).send({data: {username: rows[0].username, email: rows[0].email},message: 'Account successfully created.', success: true})
     }else{
        res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -39,7 +39,7 @@ const logIn = async (req,res) => {
         }
         const token = generateJWTToken({email: rows[0].email, username: rows[0].username, id: rows[0].id})
 
-        res.status(200).send({data: {token, user:{email: rows[0].email, username: rows[0].username}}})   
+        res.status(200).send({data: {token, user:{email: rows[0].email, username: rows[0].username}},message: null, success: true})   
   }catch(e){
     res.status(401).send({data: null, message: 'Unauthorized', success: false})
   }
