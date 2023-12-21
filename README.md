@@ -8,6 +8,7 @@ Task Management Application API
 - [System Setup](#system-setup)
 - [Installation](#installation)
 - [Endpoints](#endpoints)
+- [Documentation](#documentation)
 
 ### System Setup
 Your system will need to have the following software installed:
@@ -56,3 +57,9 @@ npm run dev
 | PUT    | Update a task                           | `/tasks/:id`                                           |
 | PUT    | Update task status                      | `/tasks/:id/status`                                    |
 | DELETE | Delete a task                           | `/tasks/:id`                                           |
+
+
+### Documentation
+Insert the port number you used in the position where `port` is written in documentation url.
+
+The API documentation is available [here](http://localhost:port/docs/).

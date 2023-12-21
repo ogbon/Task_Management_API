@@ -18,7 +18,7 @@ const createTask = async (req, res) => {
     
     if(task[0].insertId){
        const [rows,fields] = await get(task[0].insertId)
-       res.status(201).send({data: rows[0]})
+       res.status(201).send({data: rows[0], message: null, success: true})
     }else{
        res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -32,7 +32,7 @@ const getTask = async (req, res) => {
 
     try {
      let [rows,fields] = await get(req.params.id)
-     res.status(200).send({data: rows[0]})
+     res.status(200).send({data: rows[0], message: null, success: true})
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -56,7 +56,6 @@ const getTask = async (req, res) => {
         success: true
      })
     }catch(err){
-        console.log(err)
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
  
@@ -86,8 +85,10 @@ const getTask = async (req, res) => {
  const updateTask = async (req, res) => {
    
     try {
-     let task = await update(req.body,req.params.id, req.decoded)
-     res.status(200).send({data: task[0]})
+     await update(req.body,req.params.id, req.decoded)
+     const [rows,fields] = await get(req.params.id) 
+     
+     res.status(200).send({data: rows[0], message: null, success: true})
     
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
@@ -98,8 +99,10 @@ const getTask = async (req, res) => {
  const editTaskStatus = async (req, res) => {
     const {status} = req.body
     try {
-     let task = await updateStatus(status,req.params.id, req.decoded)
-     res.status(200).send({data: task[0]})
+     await updateStatus(status,req.params.id, req.decoded)
+     const [rows,fields] = await get(req.params.id)
+     
+     res.status(200).send({data: rows[0], message: null, success: true})
     
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
@@ -111,7 +114,7 @@ const getTask = async (req, res) => {
     
     try {
       await remove(req.params.id, req.decoded)
-     res.status(200).send({data: null, message: 'Task Successfully deleted'})
+     res.status(202).send({data: null, message: 'Task Successfully deleted', success: true})
     
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 

@@ -4,6 +4,7 @@ const cors = require('cors')
 require('dotenv').config()
 const authRoutes = require('./routes/auth')
 const tasksRoutes = require('./routes/tasks')
+const docsRoutes = require('./routes/docs')
 
 
 const app = express()
@@ -14,6 +15,7 @@ app.use(bodyParser.json())
 
 app.use('/auth',authRoutes)
 app.use('/tasks',tasksRoutes)
+app.use('/docs', docsRoutes)
 
 
 app.use("/", (req,res) => {
