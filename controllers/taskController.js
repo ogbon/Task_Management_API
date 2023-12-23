@@ -7,8 +7,8 @@ const { create,
         getUserTasks,
       } = require('../models/task')
 const dbConnection = require('../database/database') 
-const {pagination,totalPage} = require('../helpers/tools')      
-
+const {pagination,totalPage} = require('../helpers/tools')
+const { setToRedis,getFromRedis } = require('../helpers/redis')
 
 
 const createTask = async (req, res) => {
@@ -18,7 +18,7 @@ const createTask = async (req, res) => {
     
     if(task[0].insertId){
        const [rows,fields] = await get(task[0].insertId)
-       res.status(201).send({data: rows[0]})
+       res.status(201).send({data: rows[0], message: null, success: true})
     }else{
        res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -32,7 +32,7 @@ const getTask = async (req, res) => {
 
     try {
      let [rows,fields] = await get(req.params.id)
-     res.status(200).send({data: rows[0]})
+     res.status(200).send({data: rows[0], message: null, success: true})
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -43,20 +43,41 @@ const getTask = async (req, res) => {
    
    const { page } = req.query
    
+    let data;
+    let isCached = false;
+    let cached
     try {
-        let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks");
-        let rows = await find({...pagination(page)})
-     
-     res.status(200).send({
-        count: count[0].count,
-        data: rows[0],
-        currentPage: parseInt(page && page.number, 10) || 1,
-        totalPage: totalPage(count[0].count, (page && page.size)),
-        message: null,
-        success: true
-     })
+      cached = await getFromRedis('all-tasks')
+      let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks");
+
+      if (cached) {
+         isCached = true
+         data = JSON.parse(cached)
+         res.status(200).send({
+            count: count[0].count,
+            data,
+            currentPage: parseInt(page && page.number, 10) || 1,
+            totalPage: totalPage(count[0].count, (page && page.size)),
+            message: null,
+            success: true,
+            fromCache: isCached
+         })
+      } else {
+            let rows = await find({...pagination(page)})
+            data = rows[0]
+            await setToRedis('all-tasks', JSON.stringify(data))
+         
+            res.status(200).send({
+               count: count[0].count,
+               data,
+               currentPage: parseInt(page && page.number, 10) || 1,
+               totalPage: totalPage(count[0].count, (page && page.size)),
+               message: null,
+               success: true,
+               fromCache: isCached
+            })
+     }
     }catch(err){
-        console.log(err)
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
  
@@ -64,19 +85,47 @@ const getTask = async (req, res) => {
 
  const findUserTasks = async (req, res) => {
    const {page} = req.query
+
+   let data;
+   let isCached = false;
+   let cached
        
     try {
+      cached = await getFromRedis('user-tasks')
       let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks WHERE user_id=?",[req.decoded.id]);
-      let rows = await getUserTasks({...pagination(page),currentUser:req.decoded})
+      
+      if (cached) {
+         
+         isCached = true
+         data = JSON.parse(cached)
+         
+         res.status(200).send({
+            count: count[0].count,
+            data,
+            currentPage: parseInt(page && page.number, 10) || 1,
+            totalPage: totalPage(count[0].count, (page && page.size)),
+            message: null,
+            success: true,
+            fromCache: isCached
+         })
+      } else {
+
+        let rows = await getUserTasks({...pagination(page),currentUser:req.decoded})
+        data = rows[0]
+        await setToRedis('user-tasks', JSON.stringify(data))
      
-     res.status(200).send({
-        count: count[0].count,
-        data: rows[0],
-        currentPage: parseInt(page && page.number, 10) || 1,
-        totalPage: totalPage(count[0].count, (page && page.size)),
-        message: null,
-        success: true
-     })
+        res.status(200).send({
+         count: count[0].count,
+         data,
+         currentPage: parseInt(page && page.number, 10) || 1,
+         totalPage: totalPage(count[0].count, (page && page.size)),
+         message: null,
+         success: true,
+         fromCache: isCached
+        }) 
+      }
+      
+      
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -86,8 +135,10 @@ const getTask = async (req, res) => {
  const updateTask = async (req, res) => {
    
     try {
-     let task = await update(req.body,req.params.id, req.decoded)
-     res.status(200).send({data: task[0]})
+     await update(req.body,req.params.id, req.decoded)
+     const [rows,fields] = await get(req.params.id) 
+     
+     res.status(200).send({data: rows[0], message: null, success: true})
     
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
@@ -98,8 +149,10 @@ const getTask = async (req, res) => {
  const editTaskStatus = async (req, res) => {
     const {status} = req.body
     try {
-     let task = await updateStatus(status,req.params.id, req.decoded)
-     res.status(200).send({data: task[0]})
+     await updateStatus(status,req.params.id, req.decoded)
+     const [rows,fields] = await get(req.params.id)
+     
+     res.status(200).send({data: rows[0], message: null, success: true})
     
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
@@ -111,7 +164,7 @@ const getTask = async (req, res) => {
     
     try {
       await remove(req.params.id, req.decoded)
-     res.status(200).send({data: null, message: 'Task Successfully deleted'})
+     res.status(202).send({data: null, message: 'Task Successfully deleted', success: true})
     
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 

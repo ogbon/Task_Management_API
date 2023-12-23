@@ -3,7 +3,8 @@ const dbConnection = require('../database/database')
 
 const create = async (payload, currentUser = {}) => {
     
-    const {title, description, due_date,status} = payload
+    let {title, description, due_date,status} = payload
+    due_date = new Date(due_date)
     try {
       return await dbConnection.execute("INSERT INTO tasks (title, description, due_date, status, user_id) VALUES (?,?,?,?,?)",[title, description, due_date, status, currentUser.id])
     }
@@ -47,14 +48,14 @@ const find = async ({limit,offset}) => {
 
 const update = async (payload, id, currentUser={}) => {
     
-    const {title, description, due_date,status} = payload
+    let {title, description, due_date,status} = payload
+    due_date = new Date(due_date)
     try {
         [rows, fields] = await get(id)
         if(rows[0].user_id !== currentUser.id){ 
             throw new Error("Request cannot be processed")
         }
-        await dbConnection.execute("UPDATE tasks SET title = ?, description = ?, due_date = ?, status = ? WHERE id=?",[title, description, due_date, status, id])
-        return rows
+        return await dbConnection.execute("UPDATE tasks SET title = ?, description = ?, due_date = ?, status = ? WHERE id=?",[title, description, due_date, status, id])
     }
     catch(err) {
      return err
@@ -68,8 +69,7 @@ const updateStatus = async (status,id,currentUser={}) => {
         if(rows[0].user_id !== currentUser.id){ 
             throw new Error("Request cannot be processed")
         }
-        await dbConnection.execute("UPDATE tasks SET status = ? WHERE id=?",[status, id])
-        return rows
+       return await dbConnection.execute("UPDATE tasks SET status = ? WHERE id=?",[status, id])
     }
     catch(err) {
      return err

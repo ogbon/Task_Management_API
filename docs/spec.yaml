@@ -1,0 +1,385 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Task Management Application API
+  description: Documentation for the Task Management Application API
+
+tags:
+  - name: Auth
+    description: Auth
+  - name: Tasks
+    description: Tasks
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login as a user
+      requestBody:
+        description: Login payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogIn'
+      responses:
+        "200":
+          $ref: '#/components/responses/LogIn'
+
+  /auth/sign-up:
+    post:
+      tags:
+        - Auth
+      summary: Sign Up as a user
+      requestBody:
+        description: Sign up payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUp'
+      responses:
+        "201":
+          $ref: '#/components/responses/SignUp'
+
+  /tasks:
+    post:
+      tags:
+        - Tasks
+      security:
+        - bearerAuth: [ ]
+      summary: Create new Task
+      requestBody:
+        description: Task payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        "201":
+          $ref: '#/components/responses/TaskCreate'
+    get:
+      tags:
+        - Tasks
+      summary: Fetch Tasks
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: page[size]
+          in: query
+          description: 'Page size'
+
+        - name: page[number]
+          in: query
+          description: 'Current page number'  
+      responses:
+        "200":
+          $ref: '#/components/responses/TaskFetch'
+  /tasks/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get Task
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          schema:
+            $ref: '#/components/schemas/Number'
+      responses:
+        "200":
+          $ref: '#/components/responses/TaskDetail'
+    put:
+      tags:
+        - Tasks
+      summary: Update Task
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          schema:
+            $ref: '#/components/schemas/Number'
+      requestBody:
+        description: Task payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        "200":
+          $ref: '#/components/responses/TaskDetail'
+    delete:
+      tags:
+        - Tasks
+      summary: Delete Task
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          schema:
+            $ref: '#/components/schemas/Number'
+      responses:
+        "202":
+          $ref: '#/components/responses/DeleteResource'
+  /tasks/user:
+    get:
+      tags:
+        - Tasks
+      summary: Fetch User Tasks
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: page[size]
+          in: query
+          description: 'Page size'
+
+        - name: page[number]
+          in: query
+          description: 'Current page number'  
+      responses:
+        "200":
+          $ref: '#/components/responses/UserTasksFetch'
+
+  /tasks/{id}/status:
+    put:
+      tags:
+        - Tasks
+      summary: Update Task Status
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - name: id
+          in: path
+          description: Task ID
+          schema:
+            $ref: '#/components/schemas/Number'
+      requestBody:
+        description: Task payload
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskStatusUpdate'
+      responses:
+        "200":
+          $ref: '#/components/responses/TaskDetail'
+    
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    DeleteResource:
+      description: Delete resource
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/DeleteResource'
+    LogIn:
+      description: Login response
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/LogInResponse'
+    SignUp:
+      description: Sign Up response
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/SignUpResponse'
+    TaskCreate:
+      description: Create Task response
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/TaskCreateResponse'
+    TaskFetch:
+      description: Fetch Tasks response
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/TaskFetchResponse'
+    TaskDetail:
+      description: Get Task
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/TaskDetailResponse'
+
+    UserTasksFetch: 
+      description: Fetch User Tasks
+      content:
+        "application/json":
+          schema:
+            $ref: '#/components/schemas/UserTasksFetchResponse'              
+
+  schemas:
+    Number:
+      type: number
+      example: 1
+    String:
+      type: string
+    DateTime:
+      type: string
+      format: 'date-time'
+    Email:
+      type: string
+      format: email
+      example: user@example.com
+    Boolean:
+      type: boolean  
+    BaseResponseFields:
+      properties:
+        message:
+          $ref: '#/components/schemas/String'
+        success:
+          $ref: '#/components/schemas/Boolean'
+    DeleteResource:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponseFields'
+        - properties:
+            data:
+              type: string
+              example: null      
+    LogIn:
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          type: string
+          example: password
+    SignUp:
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        password:
+          $ref: '#/components/schemas/String'
+        username:
+          $ref: '#/components/schemas/String'  
+
+    UserDetail:
+      properties:
+        username:
+          $ref: '#/components/schemas/String'
+        email:
+          $ref: '#/components/schemas/String'   
+          
+    LogInResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponseFields'
+        - properties:
+            data:
+              type: object
+              token:
+                type: string
+                example: "30a6..."
+              user:
+                $ref: "#/components/schemas/UserDetail"  
+
+    SignUpResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponseFields'
+        - properties:
+            data:
+              $ref: '#/components/schemas/UserDetail'
+
+    TaskCreate:
+      properties:
+        title:
+          $ref: '#/components/schemas/String'
+        description:
+          $ref: '#/components/schemas/String'
+        due_date:
+          $ref: '#/components/schemas/DateTime'
+        status:
+          $ref: '#/components/schemas/String'
+
+    TaskUpdate:
+      properties:
+        title:
+          $ref: '#/components/schemas/String'
+        description:
+          $ref: '#/components/schemas/String'
+        due_date:
+          $ref: '#/components/schemas/DateTime'
+        status:
+          $ref: '#/components/schemas/String'      
+
+    TaskStatusUpdate:
+      properties:
+        status:
+          $ref: '#/components/schemas/String'              
+              
+    TaskDetail:
+      properties:
+        title:
+          $ref: '#/components/schemas/String'
+        description:
+          $ref: '#/components/schemas/String'
+        due_date:
+          $ref: '#/components/schemas/DateTime'
+        status:
+          $ref: '#/components/schemas/String'
+        user_id:
+          $ref: '#/components/schemas/Number'
+        id:
+          $ref: '#/components/schemas/Number'        
+              
+    TaskCreateResponse:
+      properties:
+        data:
+          $ref: '#/components/schemas/TaskDetail'
+        message:
+          $ref: '#/components/schemas/String'
+        success:
+          $ref: "#/components/schemas/Boolean"
+          
+    TaskFetchResponse:
+      properties:
+        count:
+          $ref: '#/components/schemas/Number'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDetail'
+        currentPage:
+          $ref: '#/components/schemas/Number'
+        totalPage:
+          $ref: '#/components/schemas/Number'
+        message:
+          $ref: '#/components/schemas/String'
+        success:
+          $ref: '#/components/schemas/Boolean' 
+          
+    TaskDetailResponse:
+      properties:
+        data:
+          $ref: '#/components/schemas/TaskDetail'
+        message:
+          $ref: '#/components/schemas/String'
+        success:
+          $ref: '#/components/schemas/Boolean' 
+          
+    UserTasksFetchResponse:
+      properties:
+        count:
+          $ref: '#/components/schemas/Number'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDetail'
+        currentPage:
+          $ref: '#/components/schemas/Number'
+        totalPage:
+          $ref: '#/components/schemas/Number'
+        message:
+          $ref: '#/components/schemas/String'
+        success:
+          $ref: '#/components/schemas/Boolean'      
+              
