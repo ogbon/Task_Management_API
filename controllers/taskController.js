@@ -7,8 +7,8 @@ const { create,
         getUserTasks,
       } = require('../models/task')
 const dbConnection = require('../database/database') 
-const {pagination,totalPage} = require('../helpers/tools')      
-
+const {pagination,totalPage} = require('../helpers/tools')
+const { setToRedis,getFromRedis } = require('../helpers/redis')
 
 
 const createTask = async (req, res) => {
@@ -43,18 +43,40 @@ const getTask = async (req, res) => {
    
    const { page } = req.query
    
+    let data;
+    let isCached = false;
+    let cached
     try {
-        let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks");
-        let rows = await find({...pagination(page)})
-     
-     res.status(200).send({
-        count: count[0].count,
-        data: rows[0],
-        currentPage: parseInt(page && page.number, 10) || 1,
-        totalPage: totalPage(count[0].count, (page && page.size)),
-        message: null,
-        success: true
-     })
+      cached = await getFromRedis('all-tasks')
+      let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks");
+
+      if (cached) {
+         isCached = true
+         data = JSON.parse(cached)
+         res.status(200).send({
+            count: count[0].count,
+            data,
+            currentPage: parseInt(page && page.number, 10) || 1,
+            totalPage: totalPage(count[0].count, (page && page.size)),
+            message: null,
+            success: true,
+            fromCache: isCached
+         })
+      } else {
+            let rows = await find({...pagination(page)})
+            data = rows[0]
+            await setToRedis('all-tasks', JSON.stringify(data))
+         
+            res.status(200).send({
+               count: count[0].count,
+               data,
+               currentPage: parseInt(page && page.number, 10) || 1,
+               totalPage: totalPage(count[0].count, (page && page.size)),
+               message: null,
+               success: true,
+               fromCache: isCached
+            })
+     }
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
@@ -63,19 +85,47 @@ const getTask = async (req, res) => {
 
  const findUserTasks = async (req, res) => {
    const {page} = req.query
+
+   let data;
+   let isCached = false;
+   let cached
        
     try {
+      cached = await getFromRedis('user-tasks')
       let [count] = await dbConnection.execute("SELECT COUNT(*) as count FROM tasks WHERE user_id=?",[req.decoded.id]);
-      let rows = await getUserTasks({...pagination(page),currentUser:req.decoded})
+      
+      if (cached) {
+         
+         isCached = true
+         data = JSON.parse(cached)
+         
+         res.status(200).send({
+            count: count[0].count,
+            data,
+            currentPage: parseInt(page && page.number, 10) || 1,
+            totalPage: totalPage(count[0].count, (page && page.size)),
+            message: null,
+            success: true,
+            fromCache: isCached
+         })
+      } else {
+
+        let rows = await getUserTasks({...pagination(page),currentUser:req.decoded})
+        data = rows[0]
+        await setToRedis('user-tasks', JSON.stringify(data))
      
-     res.status(200).send({
-        count: count[0].count,
-        data: rows[0],
-        currentPage: parseInt(page && page.number, 10) || 1,
-        totalPage: totalPage(count[0].count, (page && page.size)),
-        message: null,
-        success: true
-     })
+        res.status(200).send({
+         count: count[0].count,
+         data,
+         currentPage: parseInt(page && page.number, 10) || 1,
+         totalPage: totalPage(count[0].count, (page && page.size)),
+         message: null,
+         success: true,
+         fromCache: isCached
+        }) 
+      }
+      
+      
     }catch(err){
      res.status(422).send({data: null, message: 'Unable to process your request', success: false}) 
     }
